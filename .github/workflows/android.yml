@@ -26,8 +26,17 @@ jobs:
         with:
           gradle-version: '9.3.1'
 
-      - name: Decode debug keystore
-        run: base64 -d debug.keystore.base64 > debug.keystore
+      - name: Ensure debug keystore exists
+        run: |
+          if [ -s debug.keystore.base64 ]; then
+            base64 -d debug.keystore.base64 > debug.keystore || rm -f debug.keystore
+          fi
+          if [ ! -s debug.keystore ]; then
+            keytool -genkeypair -keystore debug.keystore \
+              -storepass android -alias androiddebugkey -keypass android \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
 
       - name: Build Debug APK
         run: gradle assembleDebug --stacktrace
